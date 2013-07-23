@@ -2,6 +2,8 @@
 
 import urwid
 import urwid.raw_display
+import time
+import subprocess
 
 def main():
     text_header = (u"Bitches love HUDs!")
@@ -9,8 +11,6 @@ def main():
     def button_press(button):
         frame.footer = urwid.AttrWrap(urwid.Text(
             [u"Pressed: ", button.get_label()]), 'header')
-
-    #radio_button_group = []
 
     blank = urwid.Divider()
     listbox_content = [
@@ -36,11 +36,44 @@ def main():
 
 
     screen = urwid.raw_display.Screen()
+    
+    def voiceCommand():
+        p = subprocess.Popen(["./speech.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        out = out.strip(' \t\n\r')
+        frame.header = urwid.AttrWrap(urwid.Text(out), 'header')
+	if out == 'take a photo':
+            time.sleep(1)
+            frame.header = urwid.AttrWrap(urwid.Text('Smile while I take your picture'), 'header')
+            # Now call the method to take a photo
+	if out == 'check email':
+            time.sleep(1)
+            frame.header = urwid.AttrWrap(urwid.Text('One moment while I fetch new email'), 'header')
+            # Now call the method to take a photo
+	if out == 'tweet':
+            time.sleep(1)
+            frame.header = urwid.AttrWrap(urwid.Text('Go ahead...'), 'header')
+            # Now call the method to take a photo
+        #frame.header = urwid.AttrWrap(urwid.Text('Recording....'), 'header')
+        #time.sleep(1)
+        #for i in range(1,3):
+        #    frame.header = urwid.AttrWrap(urwid.Text(str(i)), 'header')
+        
+    def updateMessage():
+        voiceCommand()
+        #time.sleep(2)
+        #command_file = open('command.txt')
+        #new_header = ''
+        #for line in command_file:
+        #    new_header += line
+        #frame.header = urwid.AttrWrap(urwid.Text(new_header), 'header')
 
     def unhandled(key):
         if key == 'f8':
             raise urwid.ExitMainLoop()
-
+        if key == 'f7':
+            updateMessage()
+    
     urwid.MainLoop(frame, palette, screen,
         unhandled_input=unhandled).run()
 

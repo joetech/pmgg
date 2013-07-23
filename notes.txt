@@ -1,0 +1,24 @@
+To do:
+
+Video overlay.
+Start the image with something like a billion second delay if there's no toption for straight preview without capture.
+Use something like ncurses and background colors and static positioning to update text in place.
+Set Pi resolution to 640x480 so preview fills the screen.
+Possibly show Facebook, email, Twitter alerts in corner.
+
+
+Take a photo.
+When photo command is recognized, turn off HUD, take photo, bring back HUD.
+
+
+APIs.
+GMail - New mail notifications, read, send
+Twitter - Notifications, send tweet
+Facebook?
+Local Weather
+
+Voice response
+How to initiate?  Ideal is to have something streaming that would recognize a word and start recording for commands
+What keyword?
+Listen and act in the background as a daemon.
+
