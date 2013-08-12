@@ -37,3 +37,6 @@ nosetests.xml
 test.jpg
 stt.txt
 command.txt
+log.txt
+email_creds.txt
+gmail/

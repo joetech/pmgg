@@ -1,12 +1,15 @@
 #!/usr/bin/python
 
+from time import gmtime, strftime
 import urwid
 import urwid.raw_display
 import time
 import subprocess
+import gmail 
 
 def main():
-    text_header = (u"Bitches love HUDs!")
+    text_header = (u"S to Speak | X to exit")
+    g = 0
 
     def button_press(button):
         frame.footer = urwid.AttrWrap(urwid.Text(
@@ -24,7 +27,9 @@ def main():
     palette = [
         ('body','white','black', 'standout'),
         ('reverse','light gray','black'),
-        ('header','white','dark red', 'bold'),
+        ('footer','white','black', 'bold'),
+        ('header','white','dark blue', 'bold'),
+        ('working','white','dark red', 'bold'),
         ('important','dark blue','light gray',('standout','underline')),
         ('editfc','white', 'dark blue', 'bold'),
         ('editbx','light gray', 'dark blue'),
@@ -38,42 +43,73 @@ def main():
     screen = urwid.raw_display.Screen()
     
     def voiceCommand():
+        frame.footer = urwid.AttrWrap(urwid.Text('Listening...'), 'working')
         p = subprocess.Popen(["./speech.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
         out = out.strip(' \t\n\r')
-        frame.header = urwid.AttrWrap(urwid.Text(out), 'header')
-	if out == 'take a photo':
+        logEvent('VOICE - ' + out)
+        frame.footer = urwid.AttrWrap(urwid.Text(out), 'footer')
+	if out == 'later':
+            raise urwid.ExitMainLoop()
+	elif out == 'take a photo':
             time.sleep(1)
-            frame.header = urwid.AttrWrap(urwid.Text('Smile while I take your picture'), 'header')
-            # Now call the method to take a photo
-	if out == 'check email':
+            frame.footer = urwid.AttrWrap(urwid.Text('Smile while I take your picture'), 'footer')
+            p = subprocess.Popen(["./image.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err = p.communicate()
+            out = out.strip(' \t\n\r')
+	elif out == 'menu':
             time.sleep(1)
-            frame.header = urwid.AttrWrap(urwid.Text('One moment while I fetch new email'), 'header')
-            # Now call the method to take a photo
-	if out == 'tweet':
+            frame.footer = urwid.AttrWrap(urwid.Text('Commands:\nmenu: This menu\ntweet: Send a tweet\ncheck email: Retrieve new emails\ntake a photo: Takes a photo\nlater: Exits the HUD'), 'footer')
+	elif out == 'check email':
             time.sleep(1)
-            frame.header = urwid.AttrWrap(urwid.Text('Go ahead...'), 'header')
+            frame.footer = urwid.AttrWrap(urwid.Text('One moment while I fetch new email'), 'footer')
+            getMail()
             # Now call the method to take a photo
-        #frame.header = urwid.AttrWrap(urwid.Text('Recording....'), 'header')
-        #time.sleep(1)
-        #for i in range(1,3):
-        #    frame.header = urwid.AttrWrap(urwid.Text(str(i)), 'header')
+	elif out == 'tweet':
+            time.sleep(1)
+            frame.footer = urwid.AttrWrap(urwid.Text('Go ahead...'), 'footer')
+            tweetMsg()
+            # Now call the method to take a photo
+
+    def tweetMsg():
+        p = subprocess.Popen(["./speech-long.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        out = out.strip(' \t\n\r')
+        time.sleep(1)
+        frame.footer = urwid.AttrWrap(urwid.Text('I heard ' + out + '.  Confirm by saying Send.'), 'footer')
         
-    def updateMessage():
-        voiceCommand()
-        #time.sleep(2)
-        #command_file = open('command.txt')
-        #new_header = ''
-        #for line in command_file:
-        #    new_header += line
-        #frame.header = urwid.AttrWrap(urwid.Text(new_header), 'header')
+    def logEvent(txt):
+        f = open('log.txt', 'a')
+        timestamp = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        f.write(timestamp + ' - ' + txt + "\n")
+        f.close()
+        
+    def initEmail():
+        global g
+        f = open('email_creds.txt', 'r')
+        line = f.read()
+        creds = line.split('|')
+        f.close()
+        # g = gmail.login(creds[0], creds[1])
+        g = gmail.login('pifacetest', 'SuperSecure!')
+
+    def getMail():
+        global g
+        mail = g.inbox().mail(unread=True)
+        inbox_txt = ""
+        for msg in mail:
+            msg.fetch()
+            inbox_txt += msg.fr + msg.subject + "\n"
+            frame.footer = urwid.AttrWrap(urwid.Text(inbox_txt), 'footer')
 
     def unhandled(key):
-        if key == 'f8':
+        if key == 'x':
             raise urwid.ExitMainLoop()
-        if key == 'f7':
-            updateMessage()
+        if key == 's':
+            voiceCommand()
     
+    g = initEmail()
+
     urwid.MainLoop(frame, palette, screen,
         unhandled_input=unhandled).run()
 
