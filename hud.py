@@ -1,11 +1,13 @@
 #!/usr/bin/python
 
-from time import gmtime, strftime
+from time import gmtime, strftime, sleep
 import urwid
 import urwid.raw_display
 import time
 import subprocess
 import gmail 
+import os
+import RPi.GPIO as GPIO
 
 def main():
     text_header = (u"S to Speak | X to exit")
@@ -41,7 +43,13 @@ def main():
 
 
     screen = urwid.raw_display.Screen()
-    
+        
+    def logEvent(txt):
+        f = open('log.txt', 'a')
+        timestamp = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+        f.write(timestamp + ' - ' + txt + "\n")
+        f.close()
+        
     def voiceCommand():
         frame.footer = urwid.AttrWrap(urwid.Text('Listening...'), 'working')
         p = subprocess.Popen(["./speech.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -77,13 +85,7 @@ def main():
         out = out.strip(' \t\n\r')
         time.sleep(1)
         frame.footer = urwid.AttrWrap(urwid.Text('I heard ' + out + '.  Confirm by saying Send.'), 'footer')
-        
-    def logEvent(txt):
-        f = open('log.txt', 'a')
-        timestamp = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-        f.write(timestamp + ' - ' + txt + "\n")
-        f.close()
-        
+
     def initEmail():
         global g
         f = open('email_creds.txt', 'r')
@@ -110,10 +112,20 @@ def main():
     
     g = initEmail()
 
-    urwid.MainLoop(frame, palette, screen,
-        unhandled_input=unhandled).run()
+    while 1==1:
+        if GPIO.input(17) == False:
+            logEvent('Button Press')
+            voiceCommand()
+        elif GPIO.input(17) == True:
+            logEvent('Open')
+        sleep(0.1);
+
+#    urwid.MainLoop(frame, palette, screen,
+#        unhandled_input=unhandled).run()
 
 def setup():
+    GPIO.setmode(GPIO.BCM)
+    GPIO.setup(17, GPIO.IN)
     main()
 
 if '__main__'==__name__ or urwid.web_display.is_web_request():
