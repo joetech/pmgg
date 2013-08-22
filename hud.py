@@ -7,7 +7,34 @@ import os
 import RPi.GPIO as GPIO
 import curses
 
+
+# Set up the curses window basics
+stdscr = curses.initscr() # Init the screen
+curses.noecho() # Do not echo out keys pressed
+curses.cbreak() # Capture keys without requiring the ENTER key
+stdscr.keypad(1) # Capture cursor keys
+
+# Create a new curses window instance
+begin_x = 0
+begin_y = 0
+height = 5
+width = 40
+win = curses.newwin(height, width, begin_y, begin_x)
+
+def updateHead(txt):
+    win.addstr(0, 0, txt, curses.COLOR_RED)
+    win.refresh()
+
+def updateStat(txt):
+    win.addstr(1, 0, txt, curses.A_REVERSE)
+    win.refresh()
+
+def clearStat():
+    win.addstr(1, 0, '                     ')
+    win.refresh()
+
 headerText = "S to Speak | X to exit"
+updateHead(headerText)
 g = 0
 
 def logEvent(txt):
@@ -22,28 +49,39 @@ def voiceCommand():
     out, err = p.communicate()
     out = out.strip(' \t\n\r')
     logEvent('VOICE - ' + out)
-    headerText = out
-
+    updateHead('You said: '+out)
+    updateStat('')
+    
     if out == 'later':
+        updateStat('exit')
+        sleep(1)
+        clearStat()
         return 'exit'
     elif out == 'take a photo':
         sleep(1)
         headerText = 'Smile while I take your picture'
+        updateHead(headerText)
         p = subprocess.Popen(["./image.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        updateStat('*CLICK*')
         out, err = p.communicate()
         out = out.strip(' \t\n\r')
+        sleep(1)
+        clearStat()
     elif out == 'menu':
         sleep(1)
         headerText = 'Commands:\nmenu: This menu\ntweet: Send a tweet\ncheck email: Retrieve new emails\ntake a photo: Takes a photo\nlater: Exits the HUD'
     elif out == 'check email':
         sleep(1)
         headerText = 'One moment while I fetch new email'
+        updateHead(headerText)
         getMail()
     elif out == 'tweet':
         sleep(1)
-        headerText = 'Go ahead...'
+        headerText = 'Go ahead... (10 seconds)'
+        updateHead(headerText)
+        updateStat('talk')
         tweetMsg()
-        # Now call the method to take a photo
+        clearStat()
     return headerText
 
 def tweetMsg():
@@ -71,20 +109,6 @@ def getMail():
         inbox_txt += msg.fr + msg.subject + "\n"
         headerText = inbox_txt
 
-
-# Set up the curses window basics
-stdscr = curses.initscr() # Init the screen
-curses.noecho() # Do not echo out keys pressed
-curses.cbreak() # Capture keys without requiring the ENTER key
-stdscr.keypad(1) # Capture cursor keys
-
-# Create a new curses window instance
-begin_x = 0
-begin_y = 0
-height = 5
-width = 40
-win = curses.newwin(height, width, begin_y, begin_x)
-
 # Set up button listener
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(17, GPIO.IN)
@@ -109,8 +133,18 @@ spinnerArrow = [
 '--    |',
 '-     |',
 '      |']
-spinnerThrob = ['.','o','0','o']
-spinnerStar = ['-','\\','|','+','/','+']
+spinnerThrob = [
+'.',
+'o',
+'0',
+'o']
+spinnerStar = [
+'-',
+'\\',
+'|',
+'+',
+'/',
+'+']
 
 def spinner(spinnerChars):
 	for ch in spinnerChars:
@@ -119,20 +153,18 @@ def spinner(spinnerChars):
 		win.refresh()
 		sleep(.3)
 
-for i in range(1,10):
-	spinner(spinnerArrow)
-
 # Initialize Gmail
 g = initEmail()
 
 # Begin main loop
 exit = 'nope'
-while exit == 'nope':
-    if GPIO.input(17) == False:
+while exit != 'exit':
+    buttonStatus = GPIO.input(17)
+    if buttonStatus == False:
+        updateStat('talk')
         logEvent('Button pressed')
-        voiceCommand()
+        exit = voiceCommand()
     sleep(0.1)
-    exit = 'exit'
 
 curses.nocbreak()
 stdscr.keypad(0)
