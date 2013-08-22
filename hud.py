@@ -22,15 +22,17 @@ width = 40
 win = curses.newwin(height, width, begin_y, begin_x)
 
 def updateHead(txt):
-    win.addstr(0, 0, txt, curses.COLOR_RED)
+    win.addstr(0, 1, '                                       ')
+    win.addstr(0, 1, txt, curses.COLOR_RED)
     win.refresh()
 
 def updateStat(txt):
-    win.addstr(1, 0, txt, curses.A_REVERSE)
+    win.addstr(1, 1, txt, curses.A_REVERSE)
     win.refresh()
 
 def clearStat():
-    win.addstr(1, 0, '                     ')
+    win.addstr(1, 1, '                                       ')
+    win.addstr(1, 1, '')
     win.refresh()
 
 headerText = "S to Speak | X to exit"
@@ -61,7 +63,8 @@ def voiceCommand():
         sleep(1)
         headerText = 'Smile while I take your picture'
         updateHead(headerText)
-        p = subprocess.Popen(["./image.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        timestamp = strftime("%Y-%m-%d_%H:%M:%S", gmtime())
+        p = subprocess.Popen(["./image.sh " + timestamp, ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         updateStat('*CLICK*')
         out, err = p.communicate()
         out = out.strip(' \t\n\r')
