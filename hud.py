@@ -128,9 +128,9 @@ g = initEmail()
 # Begin main loop
 exit = 'nope'
 while exit == 'nope':
-	if GPIO.input(17) == False:
-		logEvent('Button pressed')
-		voiceCommand()
+    if GPIO.input(17) == False:
+        logEvent('Button pressed')
+        voiceCommand()
     sleep(0.1)
     exit = 'exit'
 
