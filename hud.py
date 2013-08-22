@@ -63,8 +63,10 @@ def voiceCommand():
         sleep(1)
         headerText = 'Smile while I take your picture'
         updateHead(headerText)
-        timestamp = strftime("%Y-%m-%d_%H:%M:%S", gmtime())
-        p = subprocess.Popen(["./image.sh " + timestamp, ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        timestamp = strftime("%Y%m%d%H%M%S", gmtime())
+	command = './image.sh'# ' + timestamp
+	logEvent('EXEC - ' + command)
+        p = subprocess.Popen([command, ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         updateStat('*CLICK*')
         out, err = p.communicate()
         out = out.strip(' \t\n\r')
