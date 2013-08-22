@@ -7,14 +7,14 @@ import os
 import RPi.GPIO as GPIO
 import curses
 
-    headerText = "S to Speak | X to exit"
-    g = 0
+headerText = "S to Speak | X to exit"
+g = 0
 
-    def logEvent(txt):
-        f = open('log.txt', 'a')
-        timestamp = strftime("%Y-%m-%d %H:%M:%S", gmtime())
-        f.write(timestamp + ' - ' + txt + "\n")
-        f.close()
+def logEvent(txt):
+    f = open('log.txt', 'a')
+    timestamp = strftime("%Y-%m-%d %H:%M:%S", gmtime())
+    f.write(timestamp + ' - ' + txt + "\n")
+    f.close()
         
     def voiceCommand():
         headerText = 'Listening...'
@@ -22,23 +22,24 @@ import curses
         out, err = p.communicate()
         out = out.strip(' \t\n\r')
         logEvent('VOICE - ' + out)
-	headerText = out
-	if out == 'later':
+        headerText = out
+
+        if out == 'later':
             return 'exit'
-	elif out == 'take a photo':
+        elif out == 'take a photo':
             sleep(1)
             headerText = 'Smile while I take your picture'
             p = subprocess.Popen(["./image.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = p.communicate()
             out = out.strip(' \t\n\r')
-	elif out == 'menu':
+        elif out == 'menu':
             sleep(1)
             headerText = 'Commands:\nmenu: This menu\ntweet: Send a tweet\ncheck email: Retrieve new emails\ntake a photo: Takes a photo\nlater: Exits the HUD'
-	elif out == 'check email':
+        elif out == 'check email':
             sleep(1)
             headerText = 'One moment while I fetch new email'
             getMail()
-	elif out == 'tweet':
+        elif out == 'tweet':
             sleep(1)
             headerText = 'Go ahead...'
             tweetMsg()
@@ -69,9 +70,6 @@ import curses
             msg.fetch()
             inbox_txt += msg.fr + msg.subject + "\n"
             headerText = inbox_txt
-
-
-
 
 
 # Set up the curses window basics
@@ -128,13 +126,13 @@ for i in range(1,10):
 g = initEmail()
 
 # Begin main loop
-while 1==1:
+exit = 'nope'
+while exit == 'nope':
 	if GPIO.input(17) == False:
 		logEvent('Button pressed')
 		voiceCommand()
-	# elif GPIO.input(17) == True:
-		# logEvent('Open')
-	sleep(0.1);
+    sleep(0.1)
+    exit = 'exit'
 
 curses.nocbreak()
 stdscr.keypad(0)
