@@ -15,61 +15,61 @@ def logEvent(txt):
     timestamp = strftime("%Y-%m-%d %H:%M:%S", gmtime())
     f.write(timestamp + ' - ' + txt + "\n")
     f.close()
-        
-    def voiceCommand():
-        headerText = 'Listening...'
-        p = subprocess.Popen(["./speech.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = p.communicate()
-        out = out.strip(' \t\n\r')
-        logEvent('VOICE - ' + out)
-        headerText = out
 
-        if out == 'later':
-            return 'exit'
-        elif out == 'take a photo':
-            sleep(1)
-            headerText = 'Smile while I take your picture'
-            p = subprocess.Popen(["./image.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            out, err = p.communicate()
-            out = out.strip(' \t\n\r')
-        elif out == 'menu':
-            sleep(1)
-            headerText = 'Commands:\nmenu: This menu\ntweet: Send a tweet\ncheck email: Retrieve new emails\ntake a photo: Takes a photo\nlater: Exits the HUD'
-        elif out == 'check email':
-            sleep(1)
-            headerText = 'One moment while I fetch new email'
-            getMail()
-        elif out == 'tweet':
-            sleep(1)
-            headerText = 'Go ahead...'
-            tweetMsg()
-            # Now call the method to take a photo
-        return headerText
+def voiceCommand():
+    headerText = 'Listening...'
+    p = subprocess.Popen(["./speech.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    out = out.strip(' \t\n\r')
+    logEvent('VOICE - ' + out)
+    headerText = out
 
-    def tweetMsg():
-        p = subprocess.Popen(["./speech-long.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = p.communicate()
-        out = out.strip(' \t\n\r')
+    if out == 'later':
+        return 'exit'
+    elif out == 'take a photo':
         sleep(1)
-        headerText = 'I heard ' + out + '.  Confirm by saying Send.'
+        headerText = 'Smile while I take your picture'
+        p = subprocess.Popen(["./image.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        out = out.strip(' \t\n\r')
+    elif out == 'menu':
+        sleep(1)
+        headerText = 'Commands:\nmenu: This menu\ntweet: Send a tweet\ncheck email: Retrieve new emails\ntake a photo: Takes a photo\nlater: Exits the HUD'
+    elif out == 'check email':
+        sleep(1)
+        headerText = 'One moment while I fetch new email'
+        getMail()
+    elif out == 'tweet':
+        sleep(1)
+        headerText = 'Go ahead...'
+        tweetMsg()
+        # Now call the method to take a photo
+    return headerText
 
-    def initEmail():
-        global g
-        f = open('email_creds.txt', 'r')
-        line = f.read()
-        creds = line.split('|')
-        f.close()
-        # g = gmail.login(creds[0], creds[1])
-        g = gmail.login('pifacetest', 'SuperSecure!')
+def tweetMsg():
+    p = subprocess.Popen(["./speech-long.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    out = out.strip(' \t\n\r')
+    sleep(1)
+    headerText = 'I heard ' + out + '.  Confirm by saying Send.'
 
-    def getMail():
-        global g
-        mail = g.inbox().mail(unread=True)
-        inbox_txt = ""
-        for msg in mail:
-            msg.fetch()
-            inbox_txt += msg.fr + msg.subject + "\n"
-            headerText = inbox_txt
+def initEmail():
+    global g
+    f = open('email_creds.txt', 'r')
+    line = f.read()
+    creds = line.split('|')
+    f.close()
+    # g = gmail.login(creds[0], creds[1])
+    g = gmail.login('pifacetest', 'SuperSecure!')
+
+def getMail():
+    global g
+    mail = g.inbox().mail(unread=True)
+    inbox_txt = ""
+    for msg in mail:
+        msg.fetch()
+        inbox_txt += msg.fr + msg.subject + "\n"
+        headerText = inbox_txt
 
 
 # Set up the curses window basics
