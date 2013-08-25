@@ -4,6 +4,7 @@ from time import gmtime, strftime, sleep
 import subprocess
 import gmail 
 import os
+import sys
 import RPi.GPIO as GPIO
 import curses
 
@@ -21,23 +22,50 @@ height = 5
 width = 40
 win = curses.newwin(height, width, begin_y, begin_x)
 
+def cursesWrite(y, x, txt, color):
+    try:
+        win.addstr(y, x, txt, color)
+    except curses.error:
+        pass
+
 def updateHead(txt):
-    win.addstr(0, 1, '                                       ')
-    win.addstr(0, 1, txt, curses.COLOR_RED)
+    cursesWrite(0, 1, '                                       ', 1)
+    cursesWrite(0, 1, txt, curses.COLOR_RED)
     win.refresh()
 
 def updateStat(txt):
-    win.addstr(1, 1, txt, curses.A_REVERSE)
+    cursesWrite(1, 1, txt, curses.A_REVERSE)
+    win.refresh()
+
+def updateBody(txtArr):
+    x = 2
+    for txt in txtArr:
+        cursesWrite(x, 1, '                                       ', 1)
+        cursesWrite(x, 1, txt, 1)
+        x += 1
+    win.refresh()
+
+def updateBodyList(txtArr):
+    x = 0
+    newArr = []
+    for txt in txtArr:
+        y = x + 2
+        cursesWrite(x, 1, '                                       ', 1)
+        txt = str(x + 1) + '. ' + txt
+        cursesWrite(y, 1, txt, 1)
+        x += 1
     win.refresh()
 
 def clearStat():
-    win.addstr(1, 1, '                                       ')
-    win.addstr(1, 1, '')
+    cursesWrite(1, 1, '                                       ', 1)
+    cursesWrite(1, 1, '', 1)
     win.refresh()
 
-headerText = "S to Speak | X to exit"
+headerText = 'Press button to Speak | "menu" for command list'
 updateHead(headerText)
 g = 0
+pid = 99999999
+fileList = []
 
 def logEvent(txt):
     f = open('log.txt', 'a')
@@ -46,6 +74,7 @@ def logEvent(txt):
     f.close()
 
 def voiceCommand():
+    global pid
     headerText = 'Listening...'
     p = subprocess.Popen(["./speech.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
@@ -54,17 +83,55 @@ def voiceCommand():
     updateHead('You said: '+out)
     updateStat('')
     
-    if out == 'later':
+    if (out == 'exit') or (out == "leave"):
         updateStat('exit')
-        sleep(1)
+        #sleep(1)
         clearStat()
+	logEvent('SYSTEM - Shutting down video preview at pid ' + str(pid))
+        os.kill(pid, 9)
         return 'exit'
     elif out == 'take a photo':
-        sleep(1)
+        #sleep(1)
         headerText = 'Smile while I take your picture'
         updateHead(headerText)
-        timestamp = strftime("%Y%m%d%H%M%S", gmtime())
-	command = './image.sh'# ' + timestamp
+	command = './image.sh'
+	logEvent('EXEC - ' + command)
+	logEvent('SYSTEM - Shutting down video preview at pid ' + str(pid))
+        os.kill(pid, 9)
+        p = subprocess.Popen([command, ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        sleep(1)
+        pid = preview()
+        updateStat('*CLICK*')
+        out, err = p.communicate()
+        out = out.strip(' \t\n\r')
+        sleep(1)
+        clearStat()
+    elif out == 'list photos':
+        fileDir = './photos/'
+        fileList = [ f for f in os.listdir(fileDir) if os.path.isfile(os.path.join(fileDir,f)) ]
+	logEvent('Listing photos')
+        headerText = 'Available photos:'
+        updateHead(headerText)
+	updateBodyList(fileList)
+    elif out == 'list videos':
+        fileDir = './videos/'
+        fileList = [ f for f in os.listdir(fileDir) if os.path.isfile(os.path.join(fileDir,f)) ]
+	logEvent('Listing videos')
+        headerText = 'Available videos:'
+        updateHead(headerText)
+	updateBodyList(fileList)
+    elif out == 'play video':
+        sleep(1)
+        headerText = 'Number of the video to play?'
+        updateHead(headerText)
+        updateStat('talk')
+        videoPlayPrompt()
+        clearStat()
+    elif out == 'capture video':
+        sleep(1)
+        headerText = 'Capturing 5 seconds of video'
+        updateHead(headerText)
+	command = './video.sh'
 	logEvent('EXEC - ' + command)
         p = subprocess.Popen([command, ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         updateStat('*CLICK*')
@@ -74,7 +141,15 @@ def voiceCommand():
         clearStat()
     elif out == 'menu':
         sleep(1)
-        headerText = 'Commands:\nmenu: This menu\ntweet: Send a tweet\ncheck email: Retrieve new emails\ntake a photo: Takes a photo\nlater: Exits the HUD'
+        txt = 'Commands:\n'
+        txt += 'menu: This menu\n'
+        txt += 'tweet: Send a tweet\n'
+        txt += 'check email: Retrieve new emails\n'
+        txt += 'take a photo: Takes a photo\n'
+        txt += 'capture video: Captures 5 seconds of video\n'
+        txt += 'list videos: Lists captured videos\n'
+        txt += 'later: Exits the HUD'
+        updateBody(txt)
     elif out == 'check email':
         sleep(1)
         headerText = 'One moment while I fetch new email'
@@ -95,6 +170,35 @@ def tweetMsg():
     out = out.strip(' \t\n\r')
     sleep(1)
     headerText = 'I heard ' + out + '.  Confirm by saying Send.'
+
+def preview():
+    sleep(1)
+    command = ['raspivid', '-t', '6000', '-op', '125', '-f']
+    logEvent('SYSTEM - Starting video preview overlay')
+    try:
+        return os.spawnlp(os.P_NOWAIT, 'raspivid', 'raspivid', '-t', '9999999999999', '-op', '125', '-f')
+    except Exception, e:
+        logEvent('FAILURE - ' + str(e))
+
+def videoPlayPrompt():
+    p = subprocess.Popen(["./speech.sh", ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    out = out.strip(' \t\n\r')
+    sleep(1)
+    logEvent('Playing video ' + out)
+    try:
+        vid = int(out)
+        vid = vid - 1
+        command = ['omxplayer', fileList[vid]]
+        logEvent('EXEC - omxplayer ' + command[1])
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        #out, err = p.communicate()
+        #out = out.strip(' \t\n\r')
+        #sleep(1)
+    except Exception, e:
+        logEvent('FAILURE - ' + str(e) + ' - ' + out)
+        headerText = 'Sorry.  Try again'
+        updateHead(headerText)
 
 def initEmail():
     global g
@@ -160,6 +264,9 @@ def spinner(spinnerChars):
 
 # Initialize Gmail
 g = initEmail()
+
+# Begin video overlay
+pid = preview()
 
 # Begin main loop
 exit = 'nope'
