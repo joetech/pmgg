@@ -143,7 +143,7 @@ def voiceCommand():
         updateStat('talk')
         photoViewPrompt()
         clearStat()
-    elif out == 'list videos':
+    elif (out == 'list video') or (out == 'list videos') or (out == 'videos'):
         fileDir = './videos/'
         fileList = [ f for f in os.listdir(fileDir) if os.path.isfile(os.path.join(fileDir,f)) ]
 	logEvent('Listing videos')
