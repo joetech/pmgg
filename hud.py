@@ -90,6 +90,15 @@ def voiceCommand():
 	logEvent('SYSTEM - Shutting down video preview at pid ' + str(pid))
         os.kill(pid, 9)
         return 'exit'
+    elif out == 'update software':
+	command = './update.sh'
+	logEvent('EXEC - ' + command)
+	logEvent('SYSTEM - Updating software from Github ')
+        p = subprocess.Popen([command, ""], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        out = out.strip(' \t\n\r')
+        headerText = 'PMGG System software updated!'
+        updateHead(headerText)
     elif out == 'take a photo':
         #sleep(1)
         headerText = 'Smile while I take your picture'
@@ -141,14 +150,16 @@ def voiceCommand():
         clearStat()
     elif out == 'menu':
         sleep(1)
-        txt = 'Commands:\n'
-        txt += 'menu: This menu\n'
-        txt += 'tweet: Send a tweet\n'
-        txt += 'check email: Retrieve new emails\n'
-        txt += 'take a photo: Takes a photo\n'
-        txt += 'capture video: Captures 5 seconds of video\n'
-        txt += 'list videos: Lists captured videos\n'
-        txt += 'later: Exits the HUD'
+        txt = [
+        'Commands:',
+        'menu: This menu',
+        'tweet: Send a tweet',
+        'check email: Retrieve new emails',
+        'take a photo: Takes a photo',
+        'capture video: Captures 5 seconds of video',
+        'list videos: Lists captured videos,'
+        'later: Exits the HUD'
+        ]
         updateBody(txt)
     elif out == 'check email':
         sleep(1)
