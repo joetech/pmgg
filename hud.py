@@ -153,12 +153,13 @@ def voiceCommand():
         txt = [
         'Commands:',
         'menu: This menu',
+        'update software: Updates system software',
         'tweet: Send a tweet',
         'check email: Retrieve new emails',
         'take a photo: Takes a photo',
         'capture video: Captures 5 seconds of video',
         'list videos: Lists captured videos,'
-        'later: Exits the HUD'
+        'leave: Exits the HUD'
         ]
         updateBody(txt)
     elif out == 'check email':
